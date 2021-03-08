@@ -1,0 +1,68 @@
+version: "3.7"
+
+services:
+
+  postgres:
+    image: postgres:12.5
+    ports:
+      - "5432:5432"
+    command: -c ssl=on -c ssl_ca_file=/var/lib/postgresql/root.crt -c ssl_cert_file=/var/lib/postgresql/server.crt -c ssl_key_file=/var/lib/postgresql/server.key -c hba_file=/var/lib/postgresql/pg_hba.conf
+    environment:
+      - POSTGRES_USER=test
+      - POSTGRES_PASSWORD=test
+    volumes:
+      - "postgres-data:/var/lib/postgresql/data"
+      - "./server.key:/var/lib/postgresql/server.key:ro"
+      - "./server.crt:/var/lib/postgresql/server.crt:ro"
+      - "./root.crt:/var/lib/postgresql/root.crt:ro"
+      - "./pg_hba.conf:/var/lib/postgresql/pg_hba.conf"
+
+  postgres-client:
+    image: postgres:12.5
+    environment:
+      - PGSSLMODE=verify-ca
+      - PGSSLCERT=/var/lib/postgresql/client.crt
+      - PGSSLKEY=/var/lib/postgresql/client.key
+      - PGSSLROOTCERT=/var/lib/postgresql/root.crt
+    volumes:
+      - "./client.key:/var/lib/postgresql/client.key:ro"
+      - "./client.crt:/var/lib/postgresql/client.crt:ro"
+      - "./root.crt:/var/lib/postgresql/root.crt:ro"
+
+  postgres-client-invalid-client-cert:
+    image: postgres:12.5
+    environment:
+      - PGSSLMODE=verify-ca
+      - PGSSLCERT=/var/lib/postgresql/client.crt
+      - PGSSLKEY=/var/lib/postgresql/client.key
+      - PGSSLROOTCERT=/var/lib/postgresql/root.crt
+    volumes:
+      - "./bad-client.key:/var/lib/postgresql/client.key:ro"
+      - "./bad-client.crt:/var/lib/postgresql/client.crt:ro"
+      - "./root.crt:/var/lib/postgresql/root.crt:ro"
+
+  postgres-client-invalid-server-cert:
+    image: postgres:12.5
+    environment:
+      - PGSSLMODE=verify-ca
+      - PGSSLCERT=/var/lib/postgresql/client.crt
+      - PGSSLKEY=/var/lib/postgresql/client.key
+      - PGSSLROOTCERT=/var/lib/postgresql/root.crt
+    volumes:
+      - "./client.key:/var/lib/postgresql/client.key:ro"
+      - "./client.crt:/var/lib/postgresql/client.crt:ro"
+      - "./bad-root.crt:/var/lib/postgresql/root.crt:ro"
+
+  postgres-client-no-client-certs:
+    image: postgres:12.5
+    environment:
+      - PGSSLMODE=verify-ca
+      - PGSSLROOTCERT=/var/lib/postgresql/root.crt
+    volumes:
+      - "./root.crt:/var/lib/postgresql/root.crt:ro"
+
+  postgres-client-no-ssl:
+    image: postgres:12.5
+
+volumes:
+  postgres-data:
